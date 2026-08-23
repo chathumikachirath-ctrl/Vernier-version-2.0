@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Vernier Caliper Simulator - Physics Lab</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --accent: #0284c7;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --highlight: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            line-height: 1.5;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .simulation-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            touch-action: manipulation;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: #eff6ff;
+        }
+
+        .btn-outline.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .canvas-container {
+            width: 100%;
+            overflow-x: auto;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            position: relative;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .select-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-color);
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            outline: none;
+        }
+
+        .reading-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reading-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .reading-item.final {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+        }
+
+        .reading-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .reading-value {
+            font-family: monospace, monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .calculation-box {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.95rem;
+            text-align: center;
+            color: var(--text-dark);
+        }
+
+        .hidden-reading {
+            filter: blur(8px);
+            user-select: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 10px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .status-ready { background: #e0f2fe; color: #0369a1; }
+        .status-locked { background: #dcfce7; color: #15803d; }
+
+        .instructions-list, .theory-text {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .instructions-list ol {
+            padding-left: 20px;
+        }
+
+        .instructions-list li {
+            margin-bottom: 6px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            header h1 { font-size: 1.4rem; }
+            .btn { font-size: 0.85rem; padding: 8px 12px; }
+            .card { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Vernier Caliper Virtual Simulator</h1>
+        <p>Interactive Advanced Level Physics Measurement Laboratory</p>
+    </header>
+
+    <div class="simulation-card">
+        <div class="mode-selector">
+            <button class="btn btn-outline active" id="btn-mode-ext" onclick="setMode('external')">External Diameter</button>
+            <button class="btn btn-outline" id="btn-mode-int" onclick="setMode('internal')">Internal Diameter</button>
+            <button class="btn btn-outline" id="btn-mode-depth" onclick="setMode('depth')">Depth Measurement</button>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="1000" height="420"></canvas>
+        </div>
+
+        <div id="statusBadge" class="status-badge status-ready">
+            Drag the object between the jaws to measure
+        </div>
+    </div>
+
+    <div class="controls-grid">
+        <!-- Settings & Actions -->
+        <div class="card">
+            <h2>Simulation Controls</h2>
+            
+            <div class="setting-group">
+                <label for="lcSelect">Select Least Count (LC):</label>
+                <select id="lcSelect" class="select-input" onchange="changeLeastCount(this.value)">
+                    <option value="0.10">0.10 mm (10 divisions)</option>
+                    <option value="0.05" selected>0.05 mm (20 divisions)</option>
+                    <option value="0.02">0.02 mm (50 divisions)</option>
+                </select>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn" onclick="generateRandomObject()">New Object</button>
+                <button class="btn btn-outline" onclick="resetSim()">Reset</button>
+                <button class="btn btn-outline" id="toggleAnswerBtn" onclick="toggleAnswer()">Hide Display</button>
+            </div>
+        </div>
+
+        <!-- Measurement Display -->
+        <div class="card">
+            <h2>Live Measurement</h2>
+            <div class="reading-panel" id="readingContainer">
+                <div class="reading-item">
+                    <span class="reading-label">MAIN SCALE (MSR):</span>
+                    <span class="reading-value" id="msrVal">0.00 mm</span>
+                </div>
+                <div class="reading-item">
+                    <span class="reading-label">VERNIER COINCIDENCE (VC):</span>
+                    <span class="reading-value" id="vcVal">0</span>
+                </div>
+                <div class="reading-item">
+                    <span class="reading-label">LEAST COUNT (LC):</span>
+                    <span class="reading-value" id="lcVal">0.05 mm</span>
+                </div>
+                <div class="reading-item final">
+                    <span class="reading-label">FINAL READING:</span>
+                    <span class="reading-value" id="finalVal" style="color: var(--primary);">0.00 mm</span>
+                </div>
+            </div>
+            <div class="calculation-box" id="calcBox">
+                0.00 + (0 × 0.05) = 0.00 mm
+            </div>
+        </div>
+
+        <!-- How to Use -->
+        <div class="card">
+            <h2>How to Use</h2>
+            <div class="instructions-list">
+                <ol>
+                    <li>Drag the metallic object close to the jaws/depth gauge.</li>
+                    <li>The movable jaw automatically locks tightly onto the object.</li>
+                    <li>Read the Main Scale line immediately before the Vernier Zero mark.</li>
+                    <li>Identify the Vernier line that directly aligns with a Main Scale line (highlighted in red).</li>
+                    <li>Calculate: <strong>Final = MSR + (VC × LC)</strong></li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Physics Theory -->
+        <div class="card">
+            <h2>Physics Theory Guide</h2>
+            <div class="theory-text">
+                <p><strong>Vernier Caliper:</strong> A precision instrument used to measure internal, external, and depth dimensions accurately.</p>
+                <p><strong>Least Count (LC):</strong> The smallest value that can be measured accurately. Computed as: <br><code>LC = 1 Main Scale Div - 1 Vernier Scale Div</code></p>
+                <p><strong>Main Scale Reading (MSR):</strong> The last main scale division before the Vernier zero line.</p>
+                <p><strong>Vernier Coincidence (VC):</strong> The specific division mark on the movable Vernier scale that perfectly aligns with any mark on the main scale.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Canvas & Setup
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Simulation State Variables
+    let mode = 'external'; // 'external', 'internal', 'depth'
+    let leastCount = 0.05;
+    let vernierDivisions = 20; // 1mm / 0.05mm
+    let isAnswerVisible = true;
+
+    // Measurement scale setup (1 mm = 6 canvas pixels for clear visibility)
+    const SCALE_PX = 6; 
+    const MAIN_SCALE_ORIGIN_X = 180;
+    const MAIN_SCALE_ORIGIN_Y = 140;
+
+    // Movable Jaw Position (in mm displacement)
+    let jawPosMM = 0; // 0 to 80 mm
+    let targetJawPosMM = 0;
+
+    // Measurable Object Definition
+    let object = {
+        x: 450,
+        y: 300,
+        widthMM: 24.35, // Object size in mm
+        heightPX: 60,
+        isDragging: false,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        isSnapped: false
+    };
+
+    // Initialize Simulation
+    function init() {
+        setupEventListeners();
+        updateDivisions();
+        resetSim();
+        requestAnimationFrame(animLoop);
+    }
+
+    function updateDivisions() {
+        if (leastCount === 0.10) vernierDivisions = 10;
+        else if (leastCount === 0.05) vernierDivisions = 20;
+        else if (leastCount === 0.02) vernierDivisions = 50;
+    }
+
+    function setMode(newMode) {
+        mode = newMode;
+        document.querySelectorAll('.mode-selector .btn').forEach(b => b.classList.remove('active'));
+        if (mode === 'external') document.getElementById('btn-mode-ext').classList.add('active');
+        if (mode === 'internal') document.getElementById('btn-mode-int').classList.add('active');
+        if (mode === 'depth') document.getElementById('btn-mode-depth').classList.add('active');
+        resetSim();
+    }
+
+    function changeLeastCount(val) {
+        leastCount = parseFloat(val);
+        updateDivisions();
+        updateReadings();
+    }
+
+    function generateRandomObject() {
+        // Generate random size matching current LC steps
+        const steps = Math.floor(Math.random() * 600) + 50; // up to ~30-40mm
+        object.widthMM = Math.round(steps * leastCount * 100) / 100;
+        resetSim();
+    }
+
+    function resetSim() {
+        object.isSnapped = false;
+        object.isDragging = false;
+        
+        // Default position based on mode
+        if (mode === 'external') {
+            object.x = 550;
+            object.y = 300;
+        } else if (mode === 'internal') {
+            object.x = 550;
+            object.y = 45;
+        } else if (mode === 'depth') {
+            object.x = 750;
+            object.y = 260;
+        }
+
+        targetJawPosMM = 0;
+        jawPosMM = 0;
+        updateReadings();
+    }
+
+    function toggleAnswer() {
+        isAnswerVisible = !isAnswerVisible;
+        const btn = document.getElementById('toggleAnswerBtn');
+        const container = document.getElementById('readingContainer');
+        const calcBox = document.getElementById('calcBox');
+
+        if (isAnswerVisible) {
+            btn.innerText = 'Hide Display';
+            container.classList.remove('hidden-reading');
+            calcBox.classList.remove('hidden-reading');
+        } else {
+            btn.innerText = 'Show Display';
+            container.classList.add('hidden-reading');
+            calcBox.classList.add('hidden-reading');
+        }
+    }
+
+    // Mathematical Calculation Engine
+    function calculateMeasurement() {
+        const measuredMM = jawPosMM;
+        const msr = Math.floor(measuredMM);
+        
+        // Vernier scale math: 
+        // VC = round((Measured - MSR) / LC)
+        const fractionalPart = measuredMM - msr;
+        let vc = Math.round(fractionalPart / leastCount);
+        if (vc >= vernierDivisions) {
+            vc = 0;
+        }
+
+        const calculatedFinal = msr + (vc * leastCount);
+
+        return {
+            msr: msr,
+            vc: vc,
+            lc: leastCount,
+            final: calculatedFinal
+        };
+    }
+
+    function updateReadings() {
+        const data = calculateMeasurement();
+        document.getElementById('msrVal').innerText = data.msr.toFixed(2) + " mm";
+        document.getElementById('vcVal').innerText = data.vc;
+        document.getElementById('lcVal').innerText = data.lc.toFixed(2) + " mm";
+        document.getElementById('finalVal').innerText = data.final.toFixed(2) + " mm";
+
+        document.getElementById('calcBox').innerText = 
+            `${data.msr.toFixed(2)} + (${data.vc} × ${data.lc.toFixed(2)}) = ${data.final.toFixed(2)} mm`;
+
+        const badge = document.getElementById('statusBadge');
+        if (object.isSnapped) {
+            badge.className = "status-badge status-locked";
+            badge.innerText = "Object securely positioned between jaws!";
+        } else {
+            badge.className = "status-badge status-ready";
+            badge.innerText = "Drag the object between the jaws to measure";
+        }
+    }
+
+    // Interaction & Logic Loops
+    function updatePhysics() {
+        // Handle snap logic to jaws
+        const jawX = MAIN_SCALE_ORIGIN_X + (targetJawPosMM * SCALE_PX);
+        
+        if (mode === 'external') {
+            const targetX = MAIN_SCALE_ORIGIN_X;
+            const targetY = MAIN_SCALE_ORIGIN_Y + 70;
+            
+            // Check distance to snapping zone
+            if (!object.isDragging && Math.abs(object.x - targetX) < 40 && Math.abs(object.y - targetY) < 40) {
+                object.x = targetX;
+                object.y = targetY;
+                object.isSnapped = true;
+                targetJawPosMM = object.widthMM;
+            }
+        } else if (mode === 'internal') {
+            const targetX = MAIN_SCALE_ORIGIN_X - (object.widthMM * SCALE_PX);
+            const targetY = MAIN_SCALE_ORIGIN_Y - 80;
+
+            if (!object.isDragging && Math.abs(object.x - targetX) < 40 && Math.abs(object.y - targetY) < 40) {
+                object.x = targetX;
+                object.y = targetY;
+                object.isSnapped = true;
+                targetJawPosMM = object.widthMM;
+            }
+        } else if (mode === 'depth') {
+            const targetX = MAIN_SCALE_ORIGIN_X + 450;
+            const targetY = MAIN_SCALE_ORIGIN_Y + 110 - (object.widthMM * SCALE_PX) / 2;
+
+            if (!object.isDragging && Math.abs(object.x - targetX) < 50 && Math.abs(object.y - targetY) < 50) {
+                object.x = targetX;
+                object.y = targetY;
+                object.isSnapped = true;
+                targetJawPosMM = object.widthMM;
+            }
+        }
+
+        // Smoothly animate jaw movement
+        if (Math.abs(jawPosMM - targetJawPosMM) > 0.001) {
+            jawPosMM += (targetJawPosMM - jawPosMM) * 0.2;
+            updateReadings();
+        } else {
+            jawPosMM = targetJawPosMM;
+        }
+    }
+
+    // Render Engine
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const currentData = calculateMeasurement();
+        const jawOffsetPX = jawPosMM * SCALE_PX;
+
+        // 1. Draw Depth Rod Extension (Behind)
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillRect(MAIN_SCALE_ORIGIN_X + 400, MAIN_SCALE_ORIGIN_Y + 2, 100 + jawOffsetPX, 6);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.strokeRect(MAIN_SCALE_ORIGIN_X + 400, MAIN_SCALE_ORIGIN_Y + 2, 100 + jawOffsetPX, 6);
+
+        // 2. Draw Fixed Body & Main Scale
+        // Main Beam
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillRect(MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y - 20, 520, 50);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y - 20, 520, 50);
+
+        // Fixed Outside Jaw
+        ctx.beginPath();
+        ctx.moveTo(MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y + 30);
+        ctx.lineTo(MAIN_SCALE_ORIGIN_X, MAIN_SCALE_ORIGIN_Y + 30);
+        ctx.lineTo(MAIN_SCALE_ORIGIN_X, MAIN_SCALE_ORIGIN_Y + 160);
+        ctx.bezierCurveTo(MAIN_SCALE_ORIGIN_X - 20, MAIN_SCALE_ORIGIN_Y + 140, MAIN_SCALE_ORIGIN_X - 50, MAIN_SCALE_ORIGIN_Y + 90, MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y + 30);
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fill();
+        ctx.stroke();
+
+        // Fixed Inside Jaw
+        ctx.beginPath();
+        ctx.moveTo(MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y - 20);
+        ctx.lineTo(MAIN_SCALE_ORIGIN_X, MAIN_SCALE_ORIGIN_Y - 20);
+        ctx.lineTo(MAIN_SCALE_ORIGIN_X, MAIN_SCALE_ORIGIN_Y - 100);
+        ctx.bezierCurveTo(MAIN_SCALE_ORIGIN_X - 20, MAIN_SCALE_ORIGIN_Y - 80, MAIN_SCALE_ORIGIN_X - 50, MAIN_SCALE_ORIGIN_Y - 50, MAIN_SCALE_ORIGIN_X - 60, MAIN_SCALE_ORIGIN_Y - 20);
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fill();
+        ctx.stroke();
+
+        // Main Scale Graduations (0 to 80 mm)
+        ctx.fillStyle = "#0f172a";
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineWidth = 1;
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+
+        for (let i = 0; i <= 80; i++) {
+            const x = MAIN_SCALE_ORIGIN_X + (i * SCALE_PX);
+            if (x > MAIN_SCALE_ORIGIN_X + 450) break;
+
+            let h = 8;
+            if (i % 10 === 0) {
+                h = 18;
+                ctx.fillText((i / 10).toString(), x, MAIN_SCALE_ORIGIN_Y - 3);
+            } else if (i % 5 === 0) {
+                h = 12;
+            }
+            ctx.beginPath();
+            ctx.moveTo(x, MAIN_SCALE_ORIGIN_Y + 30);
+            ctx.lineTo(x, MAIN_SCALE_ORIGIN_Y + 30 - h);
+            ctx.stroke();
+        }
+
+        // 3. Draw Object (if behind/in front depending on mode)
+        drawMeasurableObject();
+
+        // 4. Draw Movable Slider Assembly
+        const sliderX = MAIN_SCALE_ORIGIN_X + jawOffsetPX;
+
+        // Movable Outside Jaw
+        ctx.beginPath();
+        ctx.moveTo(sliderX, MAIN_SCALE_ORIGIN_Y + 30);
+        ctx.lineTo(sliderX + 60, MAIN_SCALE_ORIGIN_Y + 30);
+        ctx.lineTo(sliderX + 60, MAIN_SCALE_ORIGIN_Y + 90);
+        ctx.bezierCurveTo(sliderX + 40, MAIN_SCALE_ORIGIN_Y + 120, sliderX + 10, MAIN_SCALE_ORIGIN_Y + 140, sliderX, MAIN_SCALE_ORIGIN_Y + 160);
+        ctx.fillStyle = "#94a3b8";
+        ctx.fill();
+        ctx.strokeStyle = "#475569";
+        ctx.stroke();
+
+        // Movable Inside Jaw
+        ctx.beginPath();
+        ctx.moveTo(sliderX, MAIN_SCALE_ORIGIN_Y - 20);
+        ctx.lineTo(sliderX + 60, MAIN_SCALE_ORIGIN_Y - 20);
+        ctx.lineTo(sliderX + 60, MAIN_SCALE_ORIGIN_Y - 50);
+        ctx.bezierCurveTo(sliderX + 40, MAIN_SCALE_ORIGIN_Y - 70, sliderX + 10, MAIN_SCALE_ORIGIN_Y - 80, sliderX, MAIN_SCALE_ORIGIN_Y - 100);
+        ctx.fillStyle = "#94a3b8";
+        ctx.fill();
+        ctx.stroke();
+
+        // Slider Main Body Frame
+        ctx.fillStyle = "rgba(203, 213, 225, 0.9)";
+        ctx.fillRect(sliderX - 10, MAIN_SCALE_ORIGIN_Y + 25, 140, 45);
+        ctx.strokeRect(sliderX - 10, MAIN_SCALE_ORIGIN_Y + 25, 140, 45);
+
+        // Lock Screw on Top
+        ctx.fillStyle = "#64748b";
+        ctx.fillRect(sliderX + 35, MAIN_SCALE_ORIGIN_Y - 35, 20, 15);
+        ctx.strokeRect(sliderX + 35, MAIN_SCALE_ORIGIN_Y - 35, 20, 15);
+
+        // Vernier Scale Markings Rendering
+        // Scale Length: Vernier spans (VSD_count - 1) mm on Main Scale roughly
+        const totalVernierSpanMM = vernierDivisions === 10 ? 9 : (vernierDivisions === 20 ? 19 : 49);
+        const vStepPX = (totalVernierSpanMM * SCALE_PX) / vernierDivisions;
+
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+
+        for (let j = 0; j <= vernierDivisions; j++) {
+            const vx = sliderX + (j * vStepPX);
+            const isCoinciding = (j === currentData.vc);
+
+            let vh = 8;
+            if (j % (vernierDivisions / 5) === 0 || j === 0 || j === vernierDivisions) {
+                vh = 14;
+                ctx.fillStyle = isCoinciding ? "#ef4444" : "#0f172a";
+                ctx.fillText(j.toString(), vx, MAIN_SCALE_ORIGIN_Y + 62);
+            }
+
+            ctx.strokeStyle = isCoinciding ? "#ef4444" : "#0f172a";
+            ctx.lineWidth = isCoinciding ? 2 : 1;
+
+            ctx.beginPath();
+            ctx.moveTo(vx, MAIN_SCALE_ORIGIN_Y + 30);
+            ctx.lineTo(vx, MAIN_SCALE_ORIGIN_Y + 30 + vh);
+            ctx.stroke();
+
+            // Highlight coinciding line indicator
+            if (isCoinciding && object.isSnapped) {
+                ctx.fillStyle = "#ef4444";
+                ctx.beginPath();
+                ctx.arc(vx, MAIN_SCALE_ORIGIN_Y + 24, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Depth Container Visual for Depth Mode
+        if (mode === 'depth') {
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillRect(MAIN_SCALE_ORIGIN_X + 430, MAIN_SCALE_ORIGIN_Y + 50, 60, 180);
+            ctx.strokeStyle = "#475569";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(MAIN_SCALE_ORIGIN_X + 430, MAIN_SCALE_ORIGIN_Y + 50, 60, 180);
+
+            // Inner cavity
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(MAIN_SCALE_ORIGIN_X + 440, MAIN_SCALE_ORIGIN_Y + 50, 40, object.widthMM * SCALE_PX);
+            ctx.strokeRect(MAIN_SCALE_ORIGIN_X + 440, MAIN_SCALE_ORIGIN_Y + 50, 40, object.widthMM * SCALE_PX);
+        }
+    }
+
+    function drawMeasurableObject() {
+        const objPXWidth = object.widthMM * SCALE_PX;
+
+        ctx.save();
+        if (mode === 'external') {
+            // Metallic Cylinder Block
+            const grad = ctx.createLinearGradient(object.x, object.y, object.x + objPXWidth, object.y);
+            grad.addColorStop(0, '#94a3b8');
+            grad.addColorStop(0.5, '#f1f5f9');
+            grad.addColorStop(1, '#64748b');
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(object.x, object.y, objPXWidth, object.heightPX);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(object.x, object.y, objPXWidth, object.heightPX);
+
+            // Label
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${object.widthMM.toFixed(2)} mm`, object.x + objPXWidth / 2, object.y + object.heightPX / 2 + 4);
+
+        } else if (mode === 'internal') {
+            // Ring / Hollow Tube
+            ctx.fillStyle = '#cbd5e1';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+
+            ctx.fillRect(object.x, object.y, objPXWidth, 50);
+            ctx.strokeRect(object.x, object.y, objPXWidth, 50);
+
+            // Inner hole cutout visual
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(object.x + 10, object.y + 10, objPXWidth - 20, 30);
+            ctx.strokeRect(object.x + 10, object.y + 10, objPXWidth - 20, 30);
+
+        } else if (mode === 'depth') {
+            // Small depth block sample
+            ctx.fillStyle = '#cbd5e1';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.fillRect(object.x, object.y, 40, objPXWidth);
+            ctx.strokeRect(object.x, object.y, 40, objPXWidth);
+        }
+        ctx.restore();
+    }
+
+    // Interactive Dragging and Touch System
+    function setupEventListeners() {
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function onStart(e) {
+            const pos = getPos(e);
+            const objPXWidth = object.widthMM * SCALE_PX;
+
+            // Check hit test for object
+            if (pos.x >= object.x && pos.x <= object.x + objPXWidth &&
+                pos.y >= object.y && pos.y <= object.y + object.heightPX) {
+                object.isDragging = true;
+                object.isSnapped = false;
+                object.dragOffsetX = pos.x - object.x;
+                object.dragOffsetY = pos.y - object.y;
+                targetJawPosMM = 0; // Open/reset jaws on drag
+            }
+        }
+
+        function onMove(e) {
+            if (!object.isDragging) return;
+            e.preventDefault();
+            const pos = getPos(e);
+
+            object.x = pos.x - object.dragOffsetX;
+            object.y = pos.y - object.dragOffsetY;
+
+            // Keep within bounds
+            object.x = Math.max(10, Math.min(canvas.width - 150, object.x));
+            object.y = Math.max(10, Math.min(canvas.height - 80, object.y));
+        }
+
+        function onEnd() {
+            object.isDragging = false;
+        }
+
+        canvas.addEventListener('mousedown', onStart);
+        canvas.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onEnd);
+
+        canvas.addEventListener('touchstart', onStart, { passive: false });
+        canvas.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onEnd);
+    }
+
+    // Main Engine Animation Loop
+    function animLoop() {
+        updatePhysics();
+        draw();
+        requestAnimationFrame(animLoop);
+    }
+
+    // Launch Simulation
+    window.onload = init;
+</script>
+</body>
+</html>
