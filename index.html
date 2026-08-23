@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Physics Lab - Modern Vernier Caliper Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-grad: radial-gradient(circle at 50% 10%, #0f172a, #020617);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --neon-blue: #38bdf8;
+            --neon-cyan: #06b6d4;
+            --neon-pink: #f43f5e;
+            --neon-green: #10b981;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-grad);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1300px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 24px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        /* Simulation Canvas Frame */
+        .viewport-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .mode-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, var(--neon-blue), #2563eb);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .canvas-wrapper {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            background: #020617;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .hud-status {
+            margin-top: 16px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            padding: 8px 20px;
+            border-radius: 30px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--neon-blue);
+            letter-spacing: 1px;
+        }
+
+        /* Dash Grid */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .hud-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .hud-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: var(--neon-blue);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-card h2::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--neon-blue);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .setting-control {
+            margin-bottom: 20px;
+        }
+
+        .setting-control label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Readout Digital Screen */
+        .digital-readout {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .readout-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 10px;
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        .readout-row.highlight {
+            border-left-color: var(--neon-pink);
+            background: rgba(244, 63, 94, 0.05);
+        }
+
+        .readout-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .readout-val {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .formula-box {
+            margin-top: 12px;
+            padding: 14px;
+            background: rgba(2, 6, 23, 0.8);
+            border-radius: 12px;
+            border: 1px dashed rgba(56, 189, 248, 0.3);
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            header h1 { font-size: 1.4rem; }
+            .dash-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>3D DIGITAL VERNIER LAB</h1>
+        <p>Interactive Cybernetic Physics Precision Measurement System</p>
+    </header>
+
+    <div class="viewport-card">
+        <div class="mode-bar">
+            <button class="nav-btn active" id="btn-ext" onclick="setMode('external')">Outer Diameter</button>
+            <button class="nav-btn" id="btn-int" onclick="setMode('internal')">Inner Diameter</button>
+            <button class="nav-btn" id="btn-depth" onclick="setMode('depth')">Depth Gauge</button>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="1000" height="420"></canvas>
+        </div>
+
+        <div id="hudStatus" class="hud-status">
+            STATUS: READY // DRAG TARGET OBJECT INTO JAWS
+        </div>
+    </div>
+
+    <div class="dash-grid">
+        <!-- Control Interface -->
+        <div class="hud-card">
+            <h2>LAB CONTROLS</h2>
+            
+            <div class="setting-control">
+                <label>LEAST COUNT ACCURACY</label>
+                <select id="lcSelect" class="hud-select" onchange="changeLeastCount(this.value)">
+                    <option value="0.10">0.10 mm (Standard Resolution)</option>
+                    <option value="0.05" selected>0.05 mm (High Precision)</option>
+                    <option value="0.02">0.02 mm (Ultra Precision)</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button class="action-btn" onclick="generateRandomObject()">NEW OBJECT</button>
+                <button class="action-btn" onclick="resetSim()">RESET</button>
+            </div>
+        </div>
+
+        <!-- Telemetry Display -->
+        <div class="hud-card">
+            <h2>TELEMETRY READOUT</h2>
+            <div class="digital-readout">
+                <div class="readout-row">
+                    <span class="readout-label">MAIN SCALE (MSR)</span>
+                    <span class="readout-val" id="msrVal">0.00 mm</span>
+                </div>
+                <div class="readout-row">
+                    <span class="readout-label">VERNIER COINCIDENCE (VC)</span>
+                    <span class="readout-val" id="vcVal" style="color: var(--neon-pink);">0</span>
+                </div>
+                <div class="readout-row">
+                    <span class="readout-label">LEAST COUNT (LC)</span>
+                    <span class="readout-val" id="lcVal">0.05 mm</span>
+                </div>
+                <div class="readout-row highlight">
+                    <span class="readout-label">FINAL MEASUREMENT</span>
+                    <span class="readout-val" id="finalVal" style="color: var(--neon-blue);">0.00 mm</span>
+                </div>
+            </div>
+            <div class="formula-box" id="calcBox">
+                0.00 + (0 × 0.05) = 0.00 mm
+            </div>
+        </div>
+
+        <!-- Practical Guide -->
+        <div class="hud-card">
+            <h2>EXPERIMENT GUIDE</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
+                1. Touch/Drag metallic sample toward caliper jaws.<br>
+                2. Jaw locks on target automatically.<br>
+                3. Check glowing red laser line for coincidence index.<br>
+                4. Compute total reading: <br>
+                <strong style="color:#fff;">Final = MSR + (VC × LC)</strong>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let mode = 'external';
+    let leastCount = 0.05;
+    let vernierDivisions = 20;
+
+    const SCALE_PX = 6; 
+    const ORIGIN_X = 180;
+    const ORIGIN_Y = 160;
+
+    let jawPosMM = 0;
+    let targetJawPosMM = 0;
+
+    let object = {
+        x: 520,
+        y: 280,
+        widthMM: 28.45,
+        heightPX: 60,
+        isDragging: false,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        isSnapped: false
+    };
+
+    function init() {
+        setupEvents();
+        updateDivisions();
+        resetSim();
+        requestAnimationFrame(animLoop);
+    }
+
+    function updateDivisions() {
+        if (leastCount === 0.10) vernierDivisions = 10;
+        else if (leastCount === 0.05) vernierDivisions = 20;
+        else if (leastCount === 0.02) vernierDivisions = 50;
+    }
+
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-bar .nav-btn').forEach(b => b.classList.remove('active'));
+        if (m === 'external') document.getElementById('btn-ext').classList.add('active');
+        if (m === 'internal') document.getElementById('btn-int').classList.add('active');
+        if (m === 'depth') document.getElementById('btn-depth').classList.add('active');
+        resetSim();
+    }
+
+    function changeLeastCount(v) {
+        leastCount = parseFloat(v);
+        updateDivisions();
+        updateReadings();
+    }
+
+    function generateRandomObject() {
+        const steps = Math.floor(Math.random() * 500) + 60;
+        object.widthMM = Math.round(steps * leastCount * 100) / 100;
+        resetSim();
+    }
+
+    function resetSim() {
+        object.isSnapped = false;
+        object.isDragging = false;
+        
+        if (mode === 'external') { object.x = 550; object.y = 280; }
+        else if (mode === 'internal') { object.x = 550; object.y = 50; }
+        else if (mode === 'depth') { object.x = 750; object.y = 260; }
+
+        targetJawPosMM = 0;
+        jawPosMM = 0;
+        updateReadings();
+    }
+
+    function calculateMeasurement() {
+        const measuredMM = jawPosMM;
+        const msr = Math.floor(measuredMM);
+        const frac = measuredMM - msr;
+        let vc = Math.round(frac / leastCount);
+        if (vc >= vernierDivisions) vc = 0;
+        const finalVal = msr + (vc * leastCount);
+        return { msr, vc, lc: leastCount, final: finalVal };
+    }
+
+    function updateReadings() {
+        const data = calculateMeasurement();
+        document.getElementById('msrVal').innerText = data.msr.toFixed(2) + " mm";
+        document.getElementById('vcVal').innerText = data.vc;
+        document.getElementById('lcVal').innerText = data.lc.toFixed(2) + " mm";
+        document.getElementById('finalVal').innerText = data.final.toFixed(2) + " mm";
+        document.getElementById('calcBox').innerText = `${data.msr.toFixed(2)} + (${data.vc} × ${data.lc.toFixed(2)}) = ${data.final.toFixed(2)} mm`;
+
+        const hud = document.getElementById('hudStatus');
+        if (object.isSnapped) {
+            hud.innerText = "STATUS: SAMPLE LOCKED // READING CAPTURED";
+            hud.style.borderColor = "var(--neon-green)";
+            hud.style.color = "var(--neon-green)";
+        } else {
+            hud.innerText = "STATUS: READY // DRAG TARGET OBJECT INTO JAWS";
+            hud.style.borderColor = "var(--neon-blue)";
+            hud.style.color = "var(--neon-blue)";
+        }
+    }
+
+    function updatePhysics() {
+        if (mode === 'external') {
+            const tx = ORIGIN_X;
+            const ty = ORIGIN_Y + 70;
+            if (!object.isDragging && Math.hypot(object.x - tx, object.y - ty) < 50) {
+                object.x = tx; object.y = ty;
+                object.isSnapped = true;
+                targetJawPosMM = object.widthMM;
+            }
+        } else if (mode === 'internal') {
+            const tx = ORIGIN_X - (object.widthMM * SCALE_PX);
+            const ty = ORIGIN_Y - 90;
+            if (!object.isDragging && Math.hypot(object.x - tx, object.y - ty) < 50) {
+                object.x = tx; object.y = ty;
+                object.isSnapped = true;
+                targetJawPosMM = object.widthMM;
+            }
+        }
+
+        if (Math.abs(jawPosMM - targetJawPosMM) > 0.001) {
+            jawPosMM += (targetJawPosMM - jawPosMM) * 0.25;
+            updateReadings();
+        } else {
+            jawPosMM = targetJawPosMM;
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Cyber Grid Backdrop
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.05)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 20) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+
+        const data = calculateMeasurement();
+        const jawOffsetPX = jawPosMM * SCALE_PX;
+
+        // Metallic Main Beam Gradient
+        const beamGrad = ctx.createLinearGradient(0, ORIGIN_Y - 20, 0, ORIGIN_Y + 30);
+        beamGrad.addColorStop(0, '#94a3b8');
+        beamGrad.addColorStop(0.5, '#cbd5e1');
+        beamGrad.addColorStop(1, '#64748b');
+
+        // Main Beam
+        ctx.fillStyle = beamGrad;
+        ctx.fillRect(ORIGIN_X - 60, ORIGIN_Y - 20, 520, 50);
+
+        // Fixed Outside Jaw
+        ctx.beginPath();
+        ctx.moveTo(ORIGIN_X - 60, ORIGIN_Y + 30);
+        ctx.lineTo(ORIGIN_X, ORIGIN_Y + 30);
+        ctx.lineTo(ORIGIN_X, ORIGIN_Y + 160);
+        ctx.bezierCurveTo(ORIGIN_X - 20, ORIGIN_Y + 140, ORIGIN_X - 50, ORIGIN_Y + 90, ORIGIN_X - 60, ORIGIN_Y + 30);
+        ctx.fillStyle = beamGrad; ctx.fill(); ctx.stroke();
+
+        // Main Scale Tick Marks
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "11px Orbitron, sans-serif";
+        ctx.textAlign = "center";
+        for (let i = 0; i <= 80; i++) {
+            const x = ORIGIN_X + (i * SCALE_PX);
+            let h = 8;
+            if (i % 10 === 0) {
+                h = 18;
+                ctx.fillText((i / 10).toString(), x, ORIGIN_Y - 3);
+            } else if (i % 5 === 0) h = 12;
+
+            ctx.beginPath(); ctx.moveTo(x, ORIGIN_Y + 30); ctx.lineTo(x, ORIGIN_Y + 30 - h); ctx.stroke();
+        }
+
+        // Object Rendering
+        drawObject();
+
+        // Slider Assembly
+        const sliderX = ORIGIN_X + jawOffsetPX;
+
+        // Movable Jaw
+        ctx.beginPath();
+        ctx.moveTo(sliderX, ORIGIN_Y + 30);
+        ctx.lineTo(sliderX + 60, ORIGIN_Y + 30);
+        ctx.lineTo(sliderX + 60, ORIGIN_Y + 90);
+        ctx.bezierCurveTo(sliderX + 40, ORIGIN_Y + 120, sliderX + 10, ORIGIN_Y + 140, sliderX, ORIGIN_Y + 160);
+        ctx.fillStyle = beamGrad; ctx.fill(); ctx.stroke();
+
+        // Slider Vernier Frame Glass
+        ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+        ctx.fillRect(sliderX - 10, ORIGIN_Y + 25, 140, 45);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+        ctx.strokeRect(sliderX - 10, ORIGIN_Y + 25, 140, 45);
+
+        // Vernier Divisions Rendering
+        const spanMM = vernierDivisions === 10 ? 9 : (vernierDivisions === 20 ? 19 : 49);
+        const vStepPX = (spanMM * SCALE_PX) / vernierDivisions;
+
+        for (let j = 0; j <= vernierDivisions; j++) {
+            const vx = sliderX + (j * vStepPX);
+            const isMatch = (j === data.vc);
+
+            ctx.strokeStyle = isMatch ? "#f43f5e" : "#38bdf8";
+            ctx.lineWidth = isMatch ? 2 : 1;
+
+            ctx.beginPath(); ctx.moveTo(vx, ORIGIN_Y + 30); ctx.lineTo(vx, ORIGIN_Y + 42); ctx.stroke();
+
+            // Glowing Laser Alignment Highlight Line
+            if (isMatch && object.isSnapped) {
+                ctx.strokeStyle = "rgba(244, 63, 94, 0.8)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(vx, ORIGIN_Y - 20); ctx.lineTo(vx, ORIGIN_Y + 70); ctx.stroke();
+            }
+        }
+    }
+
+    function drawObject() {
+        const wPX = object.widthMM * SCALE_PX;
+        ctx.save();
+        if (mode === 'external') {
+            const metalGrad = ctx.createLinearGradient(object.x, 0, object.x + wPX, 0);
+            metalGrad.addColorStop(0, '#475569');
+            metalGrad.addColorStop(0.5, '#f8fafc');
+            metalGrad.addColorStop(1, '#334155');
+
+            ctx.fillStyle = metalGrad;
+            ctx.fillRect(object.x, object.y, wPX, object.heightPX);
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(object.x, object.y, wPX, object.heightPX);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 12px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${object.widthMM.toFixed(2)} mm`, object.x + wPX / 2, object.y + object.heightPX / 2 + 4);
+        }
+        ctx.restore();
+    }
+
+    function setupEvents() {
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (cx - rect.left) * (canvas.width / rect.width),
+                y: (cy - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function dragStart(e) {
+            const p = getPos(e);
+            const wPX = object.widthMM * SCALE_PX;
+            if (p.x >= object.x && p.x <= object.x + wPX && p.y >= object.y && p.y <= object.y + object.heightPX) {
+                object.isDragging = true;
+                object.isSnapped = false;
+                object.dragOffsetX = p.x - object.x;
+                object.dragOffsetY = p.y - object.y;
+                targetJawPosMM = 0;
+            }
+        }
+
+        function dragMove(e) {
+            if (!object.isDragging) return;
+            e.preventDefault();
+            const p = getPos(e);
+            object.x = Math.max(10, Math.min(canvas.width - 150, p.x - object.dragOffsetX));
+            object.y = Math.max(10, Math.min(canvas.height - 80, p.y - object.dragOffsetY));
+        }
+
+        function dragEnd() { object.isDragging = false; }
+
+        canvas.addEventListener('mousedown', dragStart);
+        canvas.addEventListener('mousemove', dragMove);
+        window.addEventListener('mouseup', dragEnd);
+
+        canvas.addEventListener('touchstart', dragStart, { passive: false });
+        canvas.addEventListener('touchmove', dragMove, { passive: false });
+        window.addEventListener('touchend', dragEnd);
+    }
+
+    function animLoop() {
+        updatePhysics();
+        draw();
+        requestAnimationFrame(animLoop);
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
